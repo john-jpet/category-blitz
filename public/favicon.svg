@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Paper background -->
+  <rect width="32" height="32" rx="5" fill="#F5F0E8"/>
+  <!-- Accent border -->
+  <rect width="32" height="32" rx="5" fill="none" stroke="#246B38" stroke-width="2.5"/>
+  <!-- Serif "B" lettermark -->
+  <text
+    x="16" y="24"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-weight="700"
+    font-size="23"
+    fill="#246B38"
+    text-anchor="middle"
+  >B</text>
+</svg>
