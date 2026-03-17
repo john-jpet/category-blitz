@@ -130,9 +130,10 @@ async function validateWithAI(
       max_tokens: 50,
       system:
         'You are a strict answer validator for a word game. ' +
-        'If the input is a valid entry for the given category, respond with its ' +
-        'properly formatted name only (correct capitalization and spelling, nothing else). ' +
-        'If it is not valid, respond with NO.',
+        'Rules: ' +
+        '1. If the input is a valid entry for the given category, reply with ONLY its correctly capitalised display name — no punctuation, no explanation, nothing else. ' +
+        '2. If it is not valid, reply with exactly: NO ' +
+        '3. Never write sentences, qualifications, or extra words. One name or NO — that is all.',
       messages: [
         {
           role: 'user',
@@ -146,6 +147,11 @@ async function validateWithAI(
 
     // Treat "No", "NO", "NO." etc. as invalid
     if (/^no[.,!]?\s*$/i.test(text)) {
+      return { valid: false };
+    }
+
+    // If the model returned a sentence instead of a name, reject it
+    if (text.length > 40 || text.includes('.')) {
       return { valid: false };
     }
 
