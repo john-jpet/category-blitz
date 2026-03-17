@@ -121,7 +121,7 @@ async function validateWithAI(
 
   // Cache hit — instant, zero API cost
   if (cache?.has(normalized)) {
-    return { valid: true, displayText: cache.get(normalized)! };
+    return { valid: true, displayText: cache.get(normalized)!, points: 1 };
   }
 
   try {
