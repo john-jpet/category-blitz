@@ -449,14 +449,14 @@ const ANIMALS_SEED: string[] = [
   // Elephants
   'Elephant', 'African Elephant', 'Asian Elephant',
   // Large herbivores
-  'Giraffe', 'Okapi', 'Zebra', 'Hippo', 'Rhinoceros', 'White Rhinoceros',
+  'Giraffe', 'Okapi', 'Zebra', 'Hippopotamus', 'Rhinoceros', 'White Rhinoceros',
   'Black Rhinoceros', 'Tapir', 'Warthog', 'Peccary',
   // Deer & bovids
   'Moose', 'Elk', 'Caribou', 'Reindeer', 'Deer', 'White-tailed Deer', 'Red Deer',
   'Fallow Deer', 'Roe Deer', 'Bison', 'Buffalo', 'Yak', 'Water Buffalo',
   'Gaur', 'Camel', 'Dromedary', 'Bactrian Camel',
   // Antelope family
-  'Impala', 'Gazelle', 'Springbok', 'Wildebeest', 'Gnu', 'Oryx', 'Gemsbok',
+  'Impala', 'Gazelle', 'Springbok', 'Wildebeest', 'Oryx', 'Gemsbok',
   'Eland', 'Kudu', 'Nyala', 'Waterbuck', 'Hartebeest', 'Sable Antelope',
   // Marine mammals
   'Whale', 'Blue Whale', 'Humpback Whale', 'Orca', 'Sperm Whale', 'Beluga',
@@ -470,8 +470,9 @@ const ANIMALS_SEED: string[] = [
   'Marmot', 'Prairie Dog', 'Groundhog', 'Chinchilla', 'Guinea Pig', 'Chipmunk',
   'Muskrat', 'Nutria', 'Naked Mole Rat',
   // Mustelids & small carnivores
-  'Otter', 'River Otter', 'Weasel', 'Stoat', 'Ermine', 'Mink', 'Ferret',
+  'Otter', 'River Otter', 'Weasel', 'Stoat', 'Mink', 'Ferret',
   'Polecat', 'Pine Marten', 'Fisher', 'Wolverine', 'Badger', 'Honey Badger',
+  // (Ermine removed — same species as Stoat)
   'Skunk', 'Mongoose', 'Meerkat', 'Civet', 'Genet', 'Binturong', 'Fossa',
   // Insectivores & odd mammals
   'Hedgehog', 'Mole', 'Shrew', 'Bat', 'Fruit Bat', 'Vampire Bat',

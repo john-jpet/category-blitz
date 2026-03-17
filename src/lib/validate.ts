@@ -97,9 +97,13 @@ function validateList(normalized: string, category: Category): ValidationResult 
 function getCategoryQuestion(raw: string, category: Category): string {
   switch (category) {
     case 'Animals':
-      return `Is "${raw}" a real animal species that exists or has existed in nature? ` +
+      return `Is "${raw}" a real animal that exists or has existed in nature? ` +
         `Mythological, fictional, fantasy, or purely imaginary creatures (e.g. unicorn, dragon, griffin, phoenix) are NOT valid. ` +
-        `Extinct real animals (e.g. dinosaurs) are valid.`;
+        `Extinct real animals (e.g. dinosaurs) are valid. ` +
+        `If valid, always reply with the standard common English name — never a scientific/Latin name. ` +
+        `Normalise nicknames and shorthands to the full name (e.g. "Hippo" → "Hippopotamus", "Croc" → "Crocodile", "T-Rex" → "Tyrannosaurus Rex"). ` +
+        `Normalise scientific names to their common English name (e.g. "Vulpes vulpes" → "Red Fox", "Panthera leo" → "Lion", "Ailuropoda melanoleuca" → "Giant Panda"). ` +
+        `If a common English name does not exist, use the most widely recognised name.`;
     case 'Fruits':
       return `Is "${raw}" a real fruit (the botanical or culinary sense)? ` +
         `Respond with its properly capitalised common name, or NO if it is not a real fruit.`;
