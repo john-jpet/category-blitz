@@ -53,6 +53,7 @@ function getCategoryCache(category: Category): Map<string, string> | null {
 export async function validateAnswer(
   answer: string,
   category: Category,
+  acceptedAnswers?: string[],
 ): Promise<ValidationResult> {
   const normalized = answer.trim().toLowerCase();
   if (!normalized) return { valid: false };
@@ -60,7 +61,7 @@ export async function validateAnswer(
   const method = VALIDATION_METHOD[category];
   return method === 'list'
     ? validateList(normalized, category)
-    : validateWithAI(answer.trim(), normalized, category);
+    : validateWithAI(answer.trim(), normalized, category, acceptedAnswers);
 }
 
 // ── List validation ───────────────────────────────────────────────────
@@ -103,10 +104,14 @@ function getCategoryQuestion(raw: string, category: Category): string {
         `If valid, always reply with the standard common English name — never a scientific/Latin name. ` +
         `Normalise nicknames and shorthands to the full name (e.g. "Hippo" → "Hippopotamus", "Croc" → "Crocodile", "T-Rex" → "Tyrannosaurus Rex"). ` +
         `Normalise scientific names to their common English name (e.g. "Vulpes vulpes" → "Red Fox", "Panthera leo" → "Lion", "Ailuropoda melanoleuca" → "Giant Panda"). ` +
-        `If a common English name does not exist, use the most widely recognised name.`;
+        `If a common English name does not exist, use the most widely recognised name. ` +
+        `Dog breeds count as distinct animals — normalise to the full breed name (e.g. "Lab" → "Labrador Retriever", "German Shepherd" → "German Shepherd Dog", "Aussie" → "Australian Shepherd").`;
     case 'Fruits':
-      return `Is "${raw}" a real fruit (the botanical or culinary sense)? ` +
-        `Respond with its properly capitalised common name, or NO if it is not a real fruit.`;
+      return `Is "${raw}" a real fruit (botanical or culinary sense)? ` +
+        `If valid, reply with the BASE fruit name only — not a variety or cultivar name. ` +
+        `Examples: "Granny Smith" → "Apple", "Fuji" → "Apple", "Bing" → "Cherry", "Medjool" → "Date", "Cara Cara" → "Orange". ` +
+        `Common multi-word fruits with a distinct identity are fine as-is (e.g. "Dragon Fruit", "Star Fruit", "Passion Fruit"). ` +
+        `Reply with the singular base fruit name, or NO if not a real fruit.`;
     case 'Sports':
       return `Is "${raw}" a real sport or athletic competition? ` +
         `Respond with its properly capitalised name, or NO if it is not a real sport.`;
@@ -120,12 +125,25 @@ async function validateWithAI(
   raw: string,
   normalized: string,
   category: Category,
+  acceptedAnswers?: string[],
 ): Promise<ValidationResult> {
   const cache = getCategoryCache(category);
 
   // Cache hit — instant, zero API cost
   if (cache?.has(normalized)) {
     return { valid: true, displayText: cache.get(normalized)!, points: 1 };
+  }
+
+  // Plural fallback: "grapes" → try "grape" in cache
+  // Handles simple -s and -es suffixes without an API call
+  const singularKey =
+    normalized.endsWith('es') && normalized.length > 4 ? normalized.slice(0, -2) :
+    normalized.endsWith('s')  && normalized.length > 3 ? normalized.slice(0, -1) :
+    null;
+  if (singularKey && cache?.has(singularKey)) {
+    const displayText = cache.get(singularKey)!;
+    cache.set(normalized, displayText); // memoize plural so next lookup is instant
+    return { valid: true, displayText, points: 1 };
   }
 
   try {
@@ -135,13 +153,17 @@ async function validateWithAI(
       system:
         'You are a strict answer validator for a word game. ' +
         'Rules: ' +
-        '1. If the input is a valid entry for the given category, reply with ONLY its correctly capitalised display name — no punctuation, no explanation, nothing else. ' +
-        '2. If it is not valid, reply with exactly: NO ' +
-        '3. Never write sentences, qualifications, or extra words. One name or NO — that is all.',
+        '1. If the input is a valid entry for the given category, reply with ONLY its correctly capitalised canonical name — no punctuation, no explanation, nothing else. ' +
+        '2. Always use the SINGULAR base form (e.g. "Grape" not "Grapes", "Apple" not "Apples", "Sport" not "Sports"). ' +
+        '3. If it is not valid, reply with exactly: NO ' +
+        '4. Never write sentences, qualifications, or extra words. One name or NO — that is all.',
       messages: [
         {
           role: 'user',
-          content: getCategoryQuestion(raw, category),
+          content: getCategoryQuestion(raw, category) +
+            (acceptedAnswers && acceptedAnswers.length > 0
+              ? ` Already accepted this session: ${acceptedAnswers.join(', ')}. If the input is the same thing as any of these (a synonym, alias, breed vs species, or different form), reply with that exact accepted name instead.`
+              : ''),
         },
       ],
     });
@@ -155,7 +177,7 @@ async function validateWithAI(
     }
 
     // If the model returned a sentence instead of a name, reject it
-    if (text.length > 40 || text.includes('.')) {
+    if (text.length > 60 || text.includes('.')) {
       return { valid: false };
     }
 

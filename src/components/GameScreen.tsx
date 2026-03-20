@@ -107,7 +107,7 @@ export function GameScreen({ category, onGameEnd }: Props) {
       setAnswers(prev => [...prev, { id, text: trimmed, status: 'pending', points: 1 }]);
 
       try {
-        const result = await validateAnswer(trimmed, category);
+        const result = await validateAnswer(trimmed, category, [...submittedDisplayTexts.current]);
         if (result.valid) {
           // Secondary dedup: catch "Red Fox" after "The Red Fox" (same AI-normalised name)
           const displayKey = result.displayText.toLowerCase();
