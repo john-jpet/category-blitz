@@ -3,9 +3,8 @@ import type { Category } from './lib/categories';
 import { UsernameScreen } from './components/UsernameScreen';
 import { GameScreen } from './components/GameScreen';
 import { ResultsScreen } from './components/ResultsScreen';
-import { LeaderboardScreen } from './components/LeaderboardScreen';
 
-type Screen = 'home' | 'game' | 'results' | 'leaderboard';
+type Screen = 'home' | 'game' | 'results';
 
 interface GameState {
   category: Category;
@@ -22,11 +21,6 @@ export default function App() {
   function handleCategorySelect(category: Category) {
     setGameState({ category, score: 0 });
     setScreen('game');
-  }
-
-  function handleViewLeaderboard(category: Category) {
-    setGameState(prev => ({ ...prev, category }));
-    setScreen('leaderboard');
   }
 
   function handleGameEnd(score: number) {
@@ -51,10 +45,7 @@ export default function App() {
         </button>
       )}
       {screen === 'home' && (
-        <UsernameScreen
-          onSelectCategory={handleCategorySelect}
-          onViewLeaderboard={handleViewLeaderboard}
-        />
+        <UsernameScreen onSelectCategory={handleCategorySelect} />
       )}
       {screen === 'game' && (
         <GameScreen
@@ -67,12 +58,6 @@ export default function App() {
           category={gameState.category}
           score={gameState.score}
           onPlayAgain={handlePlayAgain}
-        />
-      )}
-      {screen === 'leaderboard' && (
-        <LeaderboardScreen
-          initialCategory={gameState.category}
-          onPlay={handleCategorySelect}
         />
       )}
     </div>

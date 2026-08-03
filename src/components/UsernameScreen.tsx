@@ -13,10 +13,9 @@ const CATEGORY_META: Record<Category, { icon: string; short: string; desc: strin
 
 interface Props {
   onSelectCategory: (category: Category) => void;
-  onViewLeaderboard: (category: Category) => void;
 }
 
-export function UsernameScreen({ onSelectCategory, onViewLeaderboard }: Props) {
+export function UsernameScreen({ onSelectCategory }: Props) {
   const [hovered, setHovered] = useState<Category | null>(null);
 
   return (
@@ -24,8 +23,9 @@ export function UsernameScreen({ onSelectCategory, onViewLeaderboard }: Props) {
       <div className="home-card">
 
         <header className="masthead">
+          <p className="logo-eyebrow">Rapid-fire naming game</p>
           <h1 className="logo-title">
-            Category<br />
+            <span className="logo-top">Category</span>
             <span className="accent">Blitz</span>
           </h1>
           <p className="logo-tagline">Name as many as you can — 60 seconds on the clock</p>
@@ -56,14 +56,6 @@ export function UsernameScreen({ onSelectCategory, onViewLeaderboard }: Props) {
                       <span className="cat-tile-desc">{meta.desc}</span>
                     </span>
                     <span className="cat-tile-arrow" aria-hidden="true">→</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="cat-scores-btn"
-                    onClick={() => onViewLeaderboard(cat)}
-                    aria-label={`View leaderboard for ${cat}`}
-                  >
-                    🏆 Scores
                   </button>
                 </div>
               );
