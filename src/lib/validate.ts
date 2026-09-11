@@ -134,8 +134,9 @@ async function validateWithAI(
       cache?.set(normalized, result.displayText);
     }
     return result;
-  } catch {
-    // Fail open: an API error must not punish the player.
-    return { valid: true, displayText: raw, points: 1 };
+  } catch (error) {
+    // Fail closed: never award points when validation did not succeed.
+    console.error('Answer validation unavailable:', error);
+    return { valid: false };
   }
 }

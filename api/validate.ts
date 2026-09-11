@@ -72,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 50,
       system:
         'You are a strict answer validator for a word game. ' +
@@ -106,6 +106,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ valid: true, displayText, points: 1 });
   } catch (error) {
     console.error('Anthropic validation failed:', error);
-    return res.status(200).json({ valid: true, displayText: raw, points: 1 });
+    return res.status(503).json({ valid: false, error: 'Validation service unavailable' });
   }
 }
