@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import type { Category } from './categories';
 import {
   US_STATES,
@@ -22,14 +21,6 @@ export type ValidationResult =
 const SE_STUDENTS_MAP = new Map<string, string>(
   SE_STUDENTS_LIST.map(s => [s.toLowerCase().trim(), s.trim()]),
 );
-
-// ── Anthropic client ─────────────────────────────────────────────────
-// Note: VITE_ prefix exposes this key client-side.
-// For production, consider proxying through a Vercel serverless function.
-const client = new Anthropic({
-  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY as string,
-  dangerouslyAllowBrowser: true,
-});
 
 // ── Helpers ───────────────────────────────────────────────────────────
 /** Capitalise first letter of each word, handling hyphens and apostrophes. */
@@ -94,33 +85,7 @@ function validateList(normalized: string, category: Category): ValidationResult 
   }
 }
 
-// ── Category-specific validation questions ────────────────────────────
-function getCategoryQuestion(raw: string, category: Category): string {
-  switch (category) {
-    case 'Animals':
-      return `Is "${raw}" a real animal that exists or has existed in nature? ` +
-        `Mythological, fictional, fantasy, or purely imaginary creatures (e.g. unicorn, dragon, griffin, phoenix) are NOT valid. ` +
-        `Extinct real animals (e.g. dinosaurs) are valid. ` +
-        `If valid, always reply with the standard common English name — never a scientific/Latin name. ` +
-        `Normalise nicknames and shorthands to the full name (e.g. "Hippo" → "Hippopotamus", "Croc" → "Crocodile", "T-Rex" → "Tyrannosaurus Rex"). ` +
-        `Normalise scientific names to their common English name (e.g. "Vulpes vulpes" → "Red Fox", "Panthera leo" → "Lion", "Ailuropoda melanoleuca" → "Giant Panda"). ` +
-        `If a common English name does not exist, use the most widely recognised name. ` +
-        `Dog breeds count as distinct animals — normalise to the full breed name (e.g. "Lab" → "Labrador Retriever", "German Shepherd" → "German Shepherd Dog", "Aussie" → "Australian Shepherd").`;
-    case 'Fruits':
-      return `Is "${raw}" a real fruit (botanical or culinary sense)? ` +
-        `If valid, reply with the BASE fruit name only — not a variety or cultivar name. ` +
-        `Examples: "Granny Smith" → "Apple", "Fuji" → "Apple", "Bing" → "Cherry", "Medjool" → "Date", "Cara Cara" → "Orange". ` +
-        `Common multi-word fruits with a distinct identity are fine as-is (e.g. "Dragon Fruit", "Star Fruit", "Passion Fruit"). ` +
-        `Reply with the singular base fruit name, or NO if not a real fruit.`;
-    case 'Sports':
-      return `Is "${raw}" a real sport or athletic competition? ` +
-        `Respond with its properly capitalised name, or NO if it is not a real sport.`;
-    default:
-      return `Is "${raw}" a valid ${category}?`;
-  }
-}
-
-// ── AI validation ─────────────────────────────────────────────────────
+// ── AI validation via server route ─────────────────────────────────────
 async function validateWithAI(
   raw: string,
   normalized: string,
@@ -147,46 +112,30 @@ async function validateWithAI(
   }
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 50,
-      system:
-        'You are a strict answer validator for a word game. ' +
-        'Rules: ' +
-        '1. If the input is a valid entry for the given category, reply with ONLY its correctly capitalised canonical name — no punctuation, no explanation, nothing else. ' +
-        '2. Always use the SINGULAR base form (e.g. "Grape" not "Grapes", "Apple" not "Apples", "Sport" not "Sports"). ' +
-        '3. If it is not valid, reply with exactly: NO ' +
-        '4. Never write sentences, qualifications, or extra words. One name or NO — that is all.',
-      messages: [
-        {
-          role: 'user',
-          content: getCategoryQuestion(raw, category) +
-            (acceptedAnswers && acceptedAnswers.length > 0
-              ? ` Already accepted this session: ${acceptedAnswers.join(', ')}. If the input is the same thing as any of these (a synonym, alias, breed vs species, or different form), reply with that exact accepted name instead.`
-              : ''),
-        },
-      ],
+    const response = await fetch('/api/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        raw,
+        normalized,
+        category,
+        acceptedAnswers,
+      }),
     });
 
-    const block = message.content[0];
-    const text = block?.type === 'text' ? block.text.trim() : '';
-
-    // Treat "No", "NO", "NO." etc. as invalid
-    if (/^no[.,!]?\s*$/i.test(text)) {
-      return { valid: false };
+    if (!response.ok) {
+      throw new Error(`Validation request failed: ${response.status}`);
     }
 
-    // If the model returned a sentence instead of a name, reject it
-    if (text.length > 60 || text.includes('.')) {
-      return { valid: false };
+    const result = (await response.json()) as ValidationResult;
+    if (result.valid && result.displayText) {
+      cache?.set(normalized, result.displayText);
     }
-
-    // Valid — cache the properly formatted name for future lookups
-    const displayText = text || raw;
-    cache?.set(normalized, displayText);
-    return { valid: true, displayText, points: 1 };
+    return result;
   } catch {
-    // Fail open: an API error must not punish the player
+    // Fail open: an API error must not punish the player.
     return { valid: true, displayText: raw, points: 1 };
   }
 }
